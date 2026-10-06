@@ -1,46 +1,525 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Meu Primeiro Website no Azure (IaC + CI/CD - PaaS)</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 40px;
-            background-color: #f4f4f4;
-            color: #333;
-        }
-        .container {
-            background-color: #fff;
-            padding: 30px;
-            border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            text-align: center;
-        }
-        h1 {
-            color: #0056b3;
-        }
-        img {
-            max-width: 100%;
-            height: auto;
-            margin-top: 20px;
-            border-radius: 5px;
-        }
-    </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Cloud Blocks</title>
+<style>
+  :root {
+    --fundo: #0e1525;
+    --painel: #172036;
+    --borda: #2a3655;
+    --texto: #e8edf7;
+    --suave: #9aa7c2;
+    --destaque: #3b9eff;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    background: radial-gradient(1200px 600px at 50% -10%, #1c2a4a 0%, var(--fundo) 60%);
+    color: var(--texto);
+    font-family: "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif;
+    display: flex; justify-content: center;
+    -webkit-tap-highlight-color: transparent;
+    overscroll-behavior: none;
+  }
+  main { width: 100%; max-width: 520px; padding: 14px 16px 20px; }
+ 
+  header { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+  h1 { font-size: 1.35rem; margin: 0; letter-spacing: .5px; }
+  h1 span { color: var(--destaque); }
+  .selos { display: flex; gap: 6px; flex-wrap: wrap; }
+  .selo {
+    font-size: .72rem; font-weight: 600; padding: 4px 9px; border-radius: 999px;
+    border: 1px solid var(--borda); background: var(--painel); color: var(--suave); white-space: nowrap;
+  }
+  .selo.iaas { color: #ffcf7a; border-color: #6b5320; background: #2b2412; }
+  .selo.paas { color: #86e8b8; border-color: #1f5f43; background: #11281f; }
+ 
+  .jogo { display: flex; gap: 12px; align-items: flex-start; }
+  .tabuleiro { position: relative; flex: 0 0 auto; line-height: 0; }
+  #tela {
+    width: min(280px, 58vw); aspect-ratio: 7 / 13; display: block;
+    background: #0a101d; border: 2px solid var(--borda); border-radius: 10px;
+  }
+  #sobreposicao {
+    position: absolute; inset: 2px; border-radius: 8px; line-height: 1.35;
+    background: rgba(8, 13, 24, .86); display: flex; flex-direction: column;
+    align-items: center; justify-content: center; text-align: center; padding: 14px; gap: 10px;
+  }
+  #sobreposicao[hidden] { display: none; }
+  #sobreposicao h2 { margin: 0; font-size: 1.15rem; }
+  #sobreposicao p { margin: 0; font-size: .85rem; color: var(--suave); }
+  #aviso {
+    position: absolute; left: 0; right: 0; top: 38%; text-align: center; line-height: 1.2;
+    font-weight: 800; font-size: 1.3rem; color: #fff; text-shadow: 0 2px 10px #000;
+    opacity: 0; transition: opacity .25s; pointer-events: none;
+  }
+  #aviso.visivel { opacity: 1; }
+ 
+  aside { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+  .cartao { background: var(--painel); border: 1px solid var(--borda); border-radius: 10px; padding: 8px 10px; }
+  .cartao small { display: block; color: var(--suave); font-size: .68rem; text-transform: uppercase; letter-spacing: .6px; }
+  .cartao b { font-size: 1.15rem; font-variant-numeric: tabular-nums; }
+  #proxima { width: 84px; height: 44px; display: block; margin-top: 4px; }
+  .legenda { list-style: none; margin: 4px 0 0; padding: 0; font-size: .66rem; color: var(--suave); }
+  .legenda li { display: flex; align-items: center; gap: 5px; margin: 3px 0; overflow-wrap: anywhere; }
+  .legenda i { width: 11px; height: 11px; border-radius: 3px; flex: 0 0 auto; }
+ 
+  button {
+    font: inherit; color: var(--texto); background: #22304f; border: 1px solid #36466e;
+    border-radius: 10px; padding: 9px 10px; cursor: pointer; touch-action: manipulation; user-select: none;
+  }
+  button:active { background: #2e4170; }
+  button.principal { background: var(--destaque); border-color: var(--destaque); color: #04162d; font-weight: 700; }
+  .acoes { display: flex; gap: 6px; }
+  .acoes button { flex: 1; font-size: .8rem; padding: 8px 4px; }
+ 
+  .controles { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-top: 12px; }
+  .controles button { font-size: 1.35rem; padding: 12px 0; }
+  .ajuda { color: var(--suave); font-size: .76rem; margin: 12px 0 0; line-height: 1.5; }
+  kbd { background: #22304f; border: 1px solid #36466e; border-radius: 4px; padding: 0 5px; font-size: .72rem; }
+</style>
 </head>
 <body>
-    <div class="container">
-        <h1>Bem-vindo ao Meu Website Hosteado no Azure WebApp!</h1>
-        <p>Publicação via Infraestrutura como Código e CI/CD com Azure DevOps.</p>
-        <p>PaaS simplificando a vida!</p>
-            #    <img src="https://cdn-dynmedia-1.microsoft.com/is/image/microsoftcorp/acom-magenta-oxhem6rx-01-Accordion-2000x1545?resMode=sharp2&op_usm=1.5,0.65,15,0&wid=1664&hei=1062&qlt=100&fit=constrain" alt="Azure Logo">
-        <p>Data e Hora do Deployment: <span id="datetime"></span></p>
-    </div>
-
-    <script>
-        var dt = new Date();
-        document.getElementById("datetime").innerHTML = dt.toLocaleString();
-    </script>
+<main>
+<header>
+<h1>Cloud <span>Blocks</span></h1>
+<div class="selos">
+<span class="selo" id="selo-ambiente">Ambiente</span>
+<span class="selo" id="selo-versao">v</span>
+</div>
+</header>
+ 
+  <div class="jogo">
+<div class="tabuleiro">
+<canvas id="tela" aria-label="Tabuleiro do jogo"></canvas>
+<div id="aviso"></div>
+<div id="sobreposicao">
+<h2 id="sob-titulo">Cloud Blocks</h2>
+<p id="sob-texto">Alinhe 3 ou mais recursos da mesma cor, na horizontal ou na vertical, para fazer o deploy.</p>
+<button class="principal" id="btn-iniciar">Jogar</button>
+</div>
+</div>
+ 
+    <aside>
+<div class="cartao"><small>Pontos</small><b id="pontos">0</b></div>
+<div class="cartao"><small>Recorde</small><b id="recorde">0</b></div>
+<div class="cartao"><small>Nível</small><b id="nivel">1</b></div>
+<div class="cartao"><small>Próxima</small><canvas id="proxima"></canvas></div>
+<div class="cartao"><small>Recursos</small><ul class="legenda" id="legenda"></ul></div>
+<div class="acoes">
+<button id="btn-pausa">Pausar</button>
+<button id="btn-reiniciar">Reiniciar</button>
+</div>
+</aside>
+</div>
+ 
+  <div class="controles" aria-label="Controles de toque">
+<button data-acao="esquerda" aria-label="Mover para a esquerda">◀</button>
+<button data-acao="girar" aria-label="Girar">⟳</button>
+<button data-acao="direita" aria-label="Mover para a direita">▶</button>
+<button data-acao="descer" aria-label="Descer">▼</button>
+<button data-acao="soltar" aria-label="Soltar de uma vez">⤓</button>
+</div>
+ 
+  <p class="ajuda">
+    Teclado: <kbd>←</kbd> <kbd>→</kbd> mover · <kbd>↑</kbd> girar · <kbd>↓</kbd> descer ·
+<kbd>Espaço</kbd> soltar · <kbd>P</kbd> pausar
+</p>
+</main>
+ 
+<script>
+/* ============================================================================
+   CONFIGURAÇÃO — altere aqui, faça o commit e veja o pipeline publicar a mudança
+   ============================================================================ */
+const CONFIG = {
+  VERSAO: '1.0',                 // aparece no topo da página (bom para mostrar o CI/CD em aula)
+  COLUNAS: 7,
+  LINHAS: 13,
+  VELOCIDADE_INICIAL_MS: 800,    // tempo entre uma descida e outra no nível 1
+  ACELERACAO_POR_NIVEL_MS: 60,   // quanto fica mais rápido a cada nível
+  VELOCIDADE_MINIMA_MS: 130,
+  BLOCOS_POR_NIVEL: 15,          // blocos eliminados para subir de nível
+  TIPOS: [                       // cada cor é um tipo de recurso de nuvem
+    { nome: 'Computação',     cor: '#3b9eff', forma: 'quadrado'  },
+    { nome: 'Armazenamento',  cor: '#3ecf8e', forma: 'circulo'   },
+    { nome: 'Rede',           cor: '#ffb224', forma: 'triangulo' },
+    { nome: 'Banco de dados', cor: '#b18cff', forma: 'losango'   },
+    { nome: 'Aplicação',      cor: '#ff6b9d', forma: 'cruz'      }
+  ]
+};
+ 
+/* ---------- Em qual ambiente esta página está rodando? ---------- */
+function detectarAmbiente() {
+  const host = location.hostname;
+  if (/azurestaticapps\.net$/i.test(host)) return { classe: 'paas', texto: 'PaaS · Static Web App' };
+  if (/cloudapp\.azure\.com$/i.test(host) || /^\d{1,3}(\.\d{1,3}){3}$/.test(host)) {
+    if (host !== '127.0.0.1') return { classe: 'iaas', texto: 'IaaS · VM com IIS' };
+  }
+  if (host === '' || host === 'localhost' || host === '127.0.0.1') return { classe: '', texto: 'Local' };
+  return { classe: '', texto: host };
+}
+ 
+/* ---------- Estado do jogo ---------- */
+const T = 40;                                   // tamanho lógico de cada célula
+const COLS = CONFIG.COLUNAS, LINS = CONFIG.LINHAS;
+const DESLOC = [[-1, 0], [0, 1], [1, 0], [0, -1]]; // posição do 2º bloco: cima, direita, baixo, esquerda
+ 
+let grade, peca, proximaPeca, pontos, nivel, eliminados, combo;
+let estado = 'inicio';                          // inicio | caindo | limpando | pausado | fim
+let limpando = null;                            // { celulas: [[l,c]...], fim: timestamp }
+let acumulado = 0, ultimoTempo = 0;
+let recorde = 0;
+ 
+const tela = document.getElementById('tela');
+const ctx = tela.getContext('2d');
+const telaProx = document.getElementById('proxima');
+const ctxProx = telaProx.getContext('2d');
+const el = id => document.getElementById(id);
+ 
+function lerRecorde() {
+  try { return parseInt(localStorage.getItem('cloudblocks_recorde') || '0', 10) || 0; } catch (e) { return 0; }
+}
+function gravarRecorde(v) {
+  try { localStorage.setItem('cloudblocks_recorde', String(v)); } catch (e) { /* sem armazenamento: segue o jogo */ }
+}
+ 
+function novaGrade() {
+  return Array.from({ length: LINS }, () => new Array(COLS).fill(0));
+}
+function sortearTipo() { return 1 + Math.floor(Math.random() * CONFIG.TIPOS.length); }
+function sortearPeca() {
+  return { l: 0, c: Math.floor(COLS / 2) - 1, o: 1, a: sortearTipo(), b: sortearTipo() };
+}
+function celulasDaPeca(p) {
+  const d = DESLOC[p.o];
+  return [[p.l, p.c, p.a], [p.l + d[0], p.c + d[1], p.b]];
+}
+function posicaoValida(p) {
+  return celulasDaPeca(p).every(([l, c]) =>
+    c >= 0 && c < COLS && l < LINS && (l < 0 || grade[l][c] === 0));
+}
+ 
+function reiniciar() {
+  grade = novaGrade();
+  pontos = 0; nivel = 1; eliminados = 0; combo = 1;
+  limpando = null; acumulado = 0;
+  proximaPeca = sortearPeca();
+  novaPeca();
+  estado = 'caindo';
+  el('sobreposicao').hidden = true;
+  el('btn-pausa').textContent = 'Pausar';
+  atualizarPainel();
+}
+ 
+function novaPeca() {
+  peca = proximaPeca;
+  proximaPeca = sortearPeca();
+  combo = 1;
+  desenharProxima();
+  if (!posicaoValida(peca)) fimDeJogo();
+}
+ 
+function fimDeJogo() {
+  estado = 'fim';
+  peca = null;
+  if (pontos > recorde) { recorde = pontos; gravarRecorde(recorde); }
+  atualizarPainel();
+  mostrarSobreposicao('Fim de jogo', 'Você fez ' + pontos + ' pontos.', 'Jogar de novo');
+}
+ 
+function mostrarSobreposicao(titulo, texto, botao) {
+  el('sob-titulo').textContent = titulo;
+  el('sob-texto').textContent = texto;
+  el('btn-iniciar').textContent = botao;
+  el('sobreposicao').hidden = false;
+}
+ 
+/* ---------- Movimentos ---------- */
+function mover(dc) {
+  if (estado !== 'caindo') return;
+  const p = { ...peca, c: peca.c + dc };
+  if (posicaoValida(p)) peca = p;
+}
+function girar() {
+  if (estado !== 'caindo') return;
+  const o = (peca.o + 1) % 4;
+  // tenta girar no lugar; se bater na parede ou em um bloco, tenta um pequeno ajuste
+  const tentativas = [[0, 0], [0, -1], [0, 1], [-1, 0]];
+  for (const [dl, dc] of tentativas) {
+    const p = { ...peca, o, l: peca.l + dl, c: peca.c + dc };
+    if (posicaoValida(p)) { peca = p; return; }
+  }
+}
+function descer() {
+  if (estado !== 'caindo') return false;
+  const p = { ...peca, l: peca.l + 1 };
+  if (posicaoValida(p)) { peca = p; return true; }
+  travar();
+  return false;
+}
+function soltar() {
+  if (estado !== 'caindo') return;
+  while (estado === 'caindo' && descer()) { /* desce até travar */ }
+}
+ 
+function travar() {
+  const celulas = celulasDaPeca(peca);
+  if (celulas.some(([l]) => l < 0)) { fimDeJogo(); return; }
+  for (const [l, c, t] of celulas) grade[l][c] = t;
+  peca = null;
+  aplicarGravidade();
+  resolver();
+}
+ 
+/* Cada bloco cai sozinho até encontrar apoio */
+function aplicarGravidade() {
+  for (let c = 0; c < COLS; c++) {
+    let destino = LINS - 1;
+    for (let l = LINS - 1; l >= 0; l--) {
+      if (grade[l][c] !== 0) {
+        const t = grade[l][c];
+        grade[l][c] = 0;
+        grade[destino][c] = t;
+        destino--;
+      }
+    }
+  }
+}
+ 
+/* Procura sequências de 3 ou mais da mesma cor, na horizontal e na vertical */
+function acharCombinacoes() {
+  const marcado = new Set();
+  const varrer = (dl, dc) => {
+    for (let l = 0; l < LINS; l++) for (let c = 0; c < COLS; c++) {
+      const t = grade[l][c];
+      if (t === 0) continue;
+      const la = l - dl, ca = c - dc;                 // só começa a contar no início da sequência
+      if (la >= 0 && ca >= 0 && grade[la][ca] === t) continue;
+      let n = 1;
+      while (l + dl * n < LINS && c + dc * n < COLS && grade[l + dl * n][c + dc * n] === t) n++;
+      if (n >= 3) for (let i = 0; i < n; i++) marcado.add((l + dl * i) + ',' + (c + dc * i));
+    }
+  };
+  varrer(0, 1);
+  varrer(1, 0);
+  return [...marcado].map(s => s.split(',').map(Number));
+}
+ 
+function resolver() {
+  const celulas = acharCombinacoes();
+  if (celulas.length === 0) { estado = 'caindo'; novaPeca(); return; }
+  estado = 'limpando';
+  limpando = { celulas, fim: performance.now() + 280 };
+}
+ 
+function concluirLimpeza() {
+  const n = limpando.celulas.length;
+  for (const [l, c] of limpando.celulas) grade[l][c] = 0;
+  limpando = null;
+  pontos += n * 10 * combo * nivel;
+  eliminados += n;
+  nivel = 1 + Math.floor(eliminados / CONFIG.BLOCOS_POR_NIVEL);
+  if (combo > 1) avisar('Combo x' + combo + '!');
+  combo++;
+  if (pontos > recorde) { recorde = pontos; gravarRecorde(recorde); }
+  atualizarPainel();
+  aplicarGravidade();
+  resolver();                                   // a queda pode formar novas combinações (combo)
+}
+ 
+let temporizadorAviso = 0;
+function avisar(texto) {
+  const a = el('aviso');
+  a.textContent = texto;
+  a.classList.add('visivel');
+  clearTimeout(temporizadorAviso);
+  temporizadorAviso = setTimeout(() => a.classList.remove('visivel'), 700);
+}
+ 
+function alternarPausa() {
+  if (estado === 'caindo') {
+    estado = 'pausado';
+    el('btn-pausa').textContent = 'Continuar';
+    mostrarSobreposicao('Pausado', 'Respire fundo. Os recursos esperam.', 'Continuar');
+  } else if (estado === 'pausado') {
+    estado = 'caindo';
+    el('btn-pausa').textContent = 'Pausar';
+    el('sobreposicao').hidden = true;
+  }
+}
+ 
+function intervaloDeQueda() {
+  return Math.max(CONFIG.VELOCIDADE_MINIMA_MS,
+    CONFIG.VELOCIDADE_INICIAL_MS - (nivel - 1) * CONFIG.ACELERACAO_POR_NIVEL_MS);
+}
+ 
+/* ---------- Desenho ---------- */
+function ajustarTela(canvas, contexto, largura, altura) {
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = Math.round(largura * dpr);
+  canvas.height = Math.round(altura * dpr);
+  contexto.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+ 
+function retanguloArredondado(c, x, y, w, h, r) {
+  c.beginPath();
+  c.moveTo(x + r, y);
+  c.arcTo(x + w, y, x + w, y + h, r);
+  c.arcTo(x + w, y + h, x, y + h, r);
+  c.arcTo(x, y + h, x, y, r);
+  c.arcTo(x, y, x + w, y, r);
+  c.closePath();
+}
+ 
+function desenharBloco(c, x, y, t, tipoIdx, opacidade) {
+  const tipo = CONFIG.TIPOS[tipoIdx - 1];
+  const m = t * 0.06;                       // margem entre blocos
+  c.save();
+  c.globalAlpha = opacidade;
+  c.fillStyle = tipo.cor;
+  retanguloArredondado(c, x + m, y + m, t - 2 * m, t - 2 * m, t * 0.2);
+  c.fill();
+  c.fillStyle = 'rgba(255,255,255,.22)';     // brilho no topo
+  retanguloArredondado(c, x + m, y + m, t - 2 * m, (t - 2 * m) * 0.45, t * 0.2);
+  c.fill();
+ 
+  // símbolo: ajuda a diferenciar os tipos além da cor
+  const cx = x + t / 2, cy = y + t / 2, r = t * 0.2;
+  c.fillStyle = 'rgba(10,16,29,.72)';
+  c.beginPath();
+  switch (tipo.forma) {
+    case 'quadrado':  c.rect(cx - r, cy - r, 2 * r, 2 * r); break;
+    case 'circulo':   c.arc(cx, cy, r * 1.1, 0, Math.PI * 2); break;
+    case 'triangulo': c.moveTo(cx, cy - r * 1.2); c.lineTo(cx + r * 1.2, cy + r); c.lineTo(cx - r * 1.2, cy + r); c.closePath(); break;
+    case 'losango':   c.moveTo(cx, cy - r * 1.3); c.lineTo(cx + r * 1.3, cy); c.lineTo(cx, cy + r * 1.3); c.lineTo(cx - r * 1.3, cy); c.closePath(); break;
+    default:          c.rect(cx - r * 0.4, cy - r * 1.2, r * 0.8, r * 2.4); c.rect(cx - r * 1.2, cy - r * 0.4, r * 2.4, r * 0.8);
+  }
+  c.fill();
+  c.restore();
+}
+ 
+function desenhar(agora) {
+  ctx.clearRect(0, 0, COLS * T, LINS * T);
+ 
+  // grade de fundo
+  ctx.strokeStyle = 'rgba(255,255,255,.045)';
+  ctx.lineWidth = 1;
+  for (let c = 1; c < COLS; c++) { ctx.beginPath(); ctx.moveTo(c * T, 0); ctx.lineTo(c * T, LINS * T); ctx.stroke(); }
+  for (let l = 1; l < LINS; l++) { ctx.beginPath(); ctx.moveTo(0, l * T); ctx.lineTo(COLS * T, l * T); ctx.stroke(); }
+ 
+  const piscando = new Set(limpando ? limpando.celulas.map(([l, c]) => l + ',' + c) : []);
+  const pulso = 0.35 + 0.65 * Math.abs(Math.sin(agora / 45));
+ 
+  for (let l = 0; l < LINS; l++) for (let c = 0; c < COLS; c++) {
+    if (grade[l][c] === 0) continue;
+    desenharBloco(ctx, c * T, l * T, T, grade[l][c], piscando.has(l + ',' + c) ? pulso : 1);
+  }
+ 
+  if (peca) {
+    // sombra de onde a peça vai cair
+    let sombra = { ...peca };
+    while (posicaoValida({ ...sombra, l: sombra.l + 1 })) sombra.l++;
+    for (const [l, c, t] of celulasDaPeca(sombra)) if (l >= 0) desenharBloco(ctx, c * T, l * T, T, t, 0.18);
+    for (const [l, c, t] of celulasDaPeca(peca)) if (l >= 0) desenharBloco(ctx, c * T, l * T, T, t, 1);
+  }
+}
+ 
+function desenharProxima() {
+  ctxProx.clearRect(0, 0, 84, 44);
+  if (!proximaPeca) return;
+  desenharBloco(ctxProx, 2, 2, 40, proximaPeca.a, 1);
+  desenharBloco(ctxProx, 42, 2, 40, proximaPeca.b, 1);
+}
+ 
+function atualizarPainel() {
+  el('pontos').textContent = pontos;
+  el('recorde').textContent = recorde;
+  el('nivel').textContent = nivel;
+}
+ 
+/* ---------- Laço principal ---------- */
+function laco(agora) {
+  const delta = Math.min(agora - ultimoTempo, 100);
+  ultimoTempo = agora;
+ 
+  if (estado === 'caindo') {
+    acumulado += delta;
+    if (acumulado >= intervaloDeQueda()) { acumulado = 0; descer(); }
+  } else if (estado === 'limpando' && agora >= limpando.fim) {
+    concluirLimpeza();
+  }
+ 
+  if (grade) desenhar(agora);
+  requestAnimationFrame(laco);
+}
+ 
+/* ---------- Entradas ---------- */
+const ACOES = {
+  esquerda: () => mover(-1),
+  direita: () => mover(1),
+  girar: girar,
+  descer: () => { if (descer()) acumulado = 0; },
+  soltar: soltar
+};
+ 
+document.addEventListener('keydown', ev => {
+  const mapa = { ArrowLeft: 'esquerda', ArrowRight: 'direita', ArrowUp: 'girar', ArrowDown: 'descer', ' ': 'soltar' };
+  if (ev.key in mapa) {
+    ev.preventDefault();
+    if (estado === 'caindo') ACOES[mapa[ev.key]]();
+    return;
+  }
+  if (ev.key === 'p' || ev.key === 'P') { alternarPausa(); return; }
+  if (ev.key === 'Enter') {
+    if (estado === 'inicio' || estado === 'fim') reiniciar();
+    else if (estado === 'pausado') alternarPausa();
+  }
+});
+ 
+// Botões de toque: segurar repete o movimento (menos girar e soltar)
+document.querySelectorAll('.controles button').forEach(botao => {
+  const acao = botao.dataset.acao;
+  const repete = acao === 'esquerda' || acao === 'direita' || acao === 'descer';
+  let espera = 0, repeticao = 0;
+  const parar = () => { clearTimeout(espera); clearInterval(repeticao); };
+  botao.addEventListener('pointerdown', ev => {
+    ev.preventDefault();
+    parar();
+    ACOES[acao]();
+    if (repete) espera = setTimeout(() => { repeticao = setInterval(ACOES[acao], 70); }, 220);
+  });
+  ['pointerup', 'pointerleave', 'pointercancel'].forEach(tipo => botao.addEventListener(tipo, parar));
+});
+ 
+el('btn-iniciar').addEventListener('click', () => {
+  if (estado === 'pausado') alternarPausa(); else reiniciar();
+});
+el('btn-pausa').addEventListener('click', alternarPausa);
+el('btn-reiniciar').addEventListener('click', reiniciar);
+document.addEventListener('visibilitychange', () => { if (document.hidden && estado === 'caindo') alternarPausa(); });
+ 
+/* ---------- Inicialização ---------- */
+(function iniciar() {
+  const ambiente = detectarAmbiente();
+  const selo = el('selo-ambiente');
+  selo.textContent = ambiente.texto;
+  if (ambiente.classe) selo.classList.add(ambiente.classe);
+  el('selo-versao').textContent = 'v' + CONFIG.VERSAO;
+ 
+  el('legenda').innerHTML = CONFIG.TIPOS
+    .map(t => '<li><i style="background:' + t.cor + '"></i>' + t.nome + '</li>').join('');
+ 
+  ajustarTela(tela, ctx, COLS * T, LINS * T);
+  ajustarTela(telaProx, ctxProx, 84, 44);
+ 
+  recorde = lerRecorde();
+  grade = novaGrade();
+  pontos = 0; nivel = 1;
+  atualizarPainel();
+  requestAnimationFrame(laco);
+})();
+</script>
 </body>
 </html>
