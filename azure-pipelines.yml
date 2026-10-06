@@ -40,5 +40,5 @@ stages:
       inputs:
         azureSubscription: 'mbanuvem' # 🔁 informar o nome do Service Connection criado
         appType: 'webApp'
-        appName: 'lmliacpaas001'
+        appName: 'mbanuvem001'
         package: 'src'
